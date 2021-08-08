@@ -1,7 +1,7 @@
 import { useRef, useEffect, useMemo, Suspense } from "react";
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
-import { useGLTF, useTexture, OrbitControls } from "@react-three/drei";
+import { useGLTF, useTexture, OrbitControls, Stats } from "@react-three/drei";
 import { useControls, button } from "leva";
 import "./App.css";
 
@@ -17,7 +17,7 @@ function Dev() {
 
   useControls({ camera: button(() => console.log(three)) });
 
-  return null;
+  return <Stats />;
 }
 
 function Portal() {
