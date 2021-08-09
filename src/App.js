@@ -1,6 +1,6 @@
 import { useRef, useEffect, useMemo, Suspense } from "react";
 import * as THREE from "three";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { useGLTF, useTexture, OrbitControls, Stats } from "@react-three/drei";
 import { useControls, button } from "leva";
 import "./App.css";
@@ -69,24 +69,29 @@ function Fireflies() {
     },
   });
 
-  const positionArray = useMemo(() => {
-    const array = new Float32Array(count * 3);
+
+  useFrame((state) => {
+    pointsRef.current.material.uniforms.uTime.value = state.clock.elapsedTime;
+  })
+
+  const fireflies = useMemo(() => {
+    const position = new Float32Array(count * 3);
+    const scale = new Float32Array(count);
 
     for (let i = 0; i < count; i++) {
-      array[i * 3 + 0] = (Math.random() - 0.5) * 4;
-      array[i * 3 + 1] = Math.random() * 1.5;
-      array[i * 3 + 2] = (Math.random() - 0.5) * 4;
+      position[i * 3 + 0] = (Math.random() - 0.5) * 4;
+      position[i * 3 + 1] = Math.random() * 1.5;
+      position[i * 3 + 2] = (Math.random() - 0.5) * 4;
+      scale[i] = Math.random();
     }
 
-    return array;
+    return { position, scale };
   }, [count]);
 
   useEffect(() => {
     const onResize = () => {
-      pointsRef.current.material.uniforms.uSize.value = Math.min(
-        window.devicePixelRatio,
-        2
-      );
+      const updatedPixelRatio = Math.min(window.devicePixelRatio, 2);
+      pointsRef.current.material.uniforms.uSize.value = updatedPixelRatio;
     };
 
     window.addEventListener("resize", onResize);
@@ -99,15 +104,22 @@ function Fireflies() {
   return (
     <points ref={pointsRef}>
       <bufferGeometry
-        attributes={{ position: new THREE.BufferAttribute(positionArray, 3) }}
+        attributes={{
+          position: new THREE.BufferAttribute(fireflies.position, 3),
+          aScale: new THREE.BufferAttribute(fireflies.scale, 1),
+        }}
       />
       <shaderMaterial
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+        fragmentShader={firefliesFragmentShader}
+        transparent={true}
         uniforms={{
           uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
           uSize: { value: 100 },
+          uTime: { value: 0 },
         }}
         vertexShader={firefliesVertexShader}
-        fragmentShader={firefliesFragmentShader}
       />
     </points>
   );
